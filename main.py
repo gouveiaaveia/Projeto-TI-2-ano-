@@ -2,94 +2,116 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
+def calcular_ocorrencias(data, alfabeto):
+    # Obter o número de ocorrências para cada variável
+    ocorrencias = contar_ocorrencias(data, alfabeto)
 
-def contar_ocorrencias(data):
-    # Inicializa um dicionário para armazenar o número de ocorrências por variável
+    # Imprimir e plotar o resultado
+    for i, (variavel, ocor) in enumerate(ocorrencias.items()):
+        print(f"Ocorrências para {variavel}:")
+        for idx, valor in enumerate(alfabeto):
+            if ocor[idx] > 0:
+                print(f"  Valor {valor}: {ocor[idx]} ocorrências")
+        
+        # Criar gráfico de barras somente com ocorrências diferentes de 0
+        valores_presentes = alfabeto[ocor > 0]  # Filtra valores presentes no alfabeto
+        contagens_presentes = ocor[ocor > 0]    # Filtra as contagens diferentes de 0
+
+        plt.bar(valores_presentes.astype(str), contagens_presentes, color="red", align="center")
+        plt.xlabel(variavel)
+        plt.ylabel("Contagem")
+        plt.xticks(rotation=90)
+        plt.tight_layout()
+        plt.show()
+
+    # Adicione o retorno das ocorrências aqui
+    return ocorrencias
+
+def contar_ocorrencias(data, alfabetoGerral):
     ocorrencias_por_variavel = {}
-
-    # Itera sobre cada coluna (variável)
     for coluna in data.columns:
-        # Conta as ocorrências de cada símbolo (valor único) na coluna
-        valores_unicos, contagem = np.unique(data[coluna], return_counts=True)
-        # Armazena no dicionário o resultado da coluna
-        ocorrencias = {valor: count for valor, count in zip(valores_unicos, contagem) if count != 0}
-        ocorrencias_por_variavel[coluna] = ocorrencias
+        contagem = np.zeros(len(alfabetoGerral), dtype=int)
+        valores_unicos, contagem_valores = np.unique(data[coluna], return_counts=True)
+
+        # Adicione uma impressão para verificar os valores únicos
+        print(f"Valores únicos na coluna {coluna}: {valores_unicos}")
+
+        indices = np.searchsorted(alfabetoGerral, valores_unicos)
+
+        # Imprima os índices correspondentes
+        print(f"Índices correspondentes para {coluna}: {indices}")
+
+        # Atualiza a contagem
+        np.add.at(contagem, indices, contagem_valores)
+        ocorrencias_por_variavel[coluna] = contagem
     
     return ocorrencias_por_variavel
 
-def main():
+def binning(data, coluna, alfabeto, num_simbolos, ocorrencias):
+    intervalos = np.array_split(alfabeto, num_simbolos)
+    nova_coluna = data[coluna].copy()
+    
+    for idx, valor_original in enumerate(data[coluna]):
+        for intervalo in intervalos:
+            if intervalo[0] <= valor_original <= intervalo[-1]:
+                indices = np.isin(alfabeto, intervalo)
+                valores_frequentes = alfabeto[indices]
+                frequencias = ocorrencias[indices]
 
-    # Load the Excel file
+                # Imprima para verificar as frequências
+                print(f"Frequências para intervalo {intervalo}: {frequencias}")
+
+                # Verifique se frequências está vazio
+                if np.any(frequencias):
+                    valor_mais_frequente = valores_frequentes[np.argmax(frequencias)]
+                    nova_coluna.iloc[idx] = valor_mais_frequente
+                else:
+                    print(f"Aviso: Nenhuma frequência encontrada para o intervalo {intervalo}")
+                break
+
+    return nova_coluna
+
+
+
+def main():
+    # Carregar o arquivo Excel
     exelFile = "CarDataset.xlsx"
     data = pd.read_excel(exelFile)
 
     varNames = data.columns.values.tolist()
 
+    # Plotar gráficos MPG vs outras variáveis
     j = 0
+    for i in range(len(varNames) - 1):
+        plt.subplot(3, 2, j+1)
+        plt.plot(data[varNames[i]], data["MPG"], ".m")
+        plt.title(f"MPG vs {varNames[i]}")
+        plt.xlabel(varNames[i])
+        plt.ylabel("MPG")
+        j += 1
 
-
-    for i in varNames:
-        if i != "MPG":
-            plt.subplot(3, 2, j+1)
-            plt.plot(data[i], data["MPG"], ".m")
-            plt.title(f"MPG vs {i}")
-            plt.xlabel(i)
-            plt.ylabel("MPG")
-            j += 1
-            
-        if j >= 6:
-            break
-
-    # Ajustar layout
     plt.subplots_adjust(hspace=1.4)
     plt.subplots_adjust(wspace=0.5)
-
     plt.show()
 
     # Converter dados para uint16
     data_uint16 = data.astype(np.uint16)
 
-    # Converter o DataFrame para um array NumPy
-    array_data = data_uint16.to_numpy()
+    # Criar o alfabeto como um intervalo de uint16
+    alfabeto_geral = np.arange(data_uint16.min().min(), data_uint16.max().max() + 1)
 
-    # Inicializar conjunto para o alfabeto geral
-    alfabeto_geral = set()
+    # Calcular e plotar as ocorrências
+    ocorrencias_por_variavel = calcular_ocorrencias(data_uint16, alfabeto_geral)
 
-    #criar o alfabeto
-    for i in range(pow(2, 16) -1):
-        alfabeto_geral.update([i])
-    
-    print(alfabeto_geral)
 
-    # Iterar sobre cada coluna e obter os valores únicos
-    #for coluna in range(array_data.shape[1]):  # Itera sobre as colunas
-    #    valores_unicos = np.unique(array_data[:, coluna])
-    #    alfabeto_geral.update(valores_unicos)
+    # Aplicar binning nas colunas e salvar as colunas binned no DataFrame
+    data_uint16["Weight_binned"] = binning(data_uint16, "Weight", alfabeto_geral, 5, ocorrencias_por_variavel["Weight"])
+    data_uint16["Displacement_binned"] = binning(data_uint16, "Displacement", alfabeto_geral, 5, ocorrencias_por_variavel["Displacement"])
+    data_uint16["Horsepower_binned"] = binning(data_uint16, "Horsepower", alfabeto_geral, 5, ocorrencias_por_variavel["Horsepower"])
 
-    # Converter o alfabeto para uma lista
-    alfabeto_geral = list(alfabeto_geral)
-    
-
-    # Obter o número de ocorrências para cada variável
-    ocorrencias = contar_ocorrencias(data_uint16)
-
-    # Imprimir o resultado
-    for variavel, ocor in ocorrencias.items():
-        print(f"Ocorrências para {variavel}:")
-        for valor, contagem in ocor.items():
-            print(f"  Valor {valor}: {contagem} ocorrências")
-        
-    
-        # Criar gráfico de barras somente com ocorrências diferentes de 0
-        plt.bar(list(ocor.keys()), list(ocor.values()), color="red", align="center")
-        plt.xlabel(variavel)
-        plt.ylabel("Contagem")
-        
-        # Centralizar os ticks do eixo x
-        plt.xticks(ticks=list(ocor.keys()), labels=list(ocor.keys()))
-        plt.tight_layout()
-        
-        plt.show()
+    # Calcular e plotar as ocorrências para os novos valores binned
+    colunas_binned = ["Weight_binned", "Displacement_binned", "Horsepower_binned"]
+    ocorrencias_binned = calcular_ocorrencias(data_uint16[colunas_binned], alfabeto_geral)
 
 
 
