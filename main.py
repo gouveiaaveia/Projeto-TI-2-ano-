@@ -48,7 +48,7 @@ def contar_ocorrencias(data, alfabetoGerral):
     return ocorrencias_por_variavel
 
 def binning(data, coluna, alfabeto, num_simbolos, ocorrencias):
-    intervalos = np.array_split(alfabeto, num_simbolos)
+    intervalos = np.array_split(alfabeto, len(alfabeto)/num_simbolos)
     nova_coluna = data[coluna].copy()
     
     for idx, valor_original in enumerate(data[coluna]):
@@ -98,7 +98,7 @@ def main():
     data_uint16 = data.astype(np.uint16)
 
     # Criar o alfabeto como um intervalo de uint16
-    alfabeto_geral = np.arange(data_uint16.min().min(), data_uint16.max().max() + 1)
+    alfabeto_geral = np.arange(0, 2**16 - 1, dtype=np.uint16)
 
     # Calcular e plotar as ocorrências
     ocorrencias_por_variavel = calcular_ocorrencias(data_uint16, alfabeto_geral)
