@@ -71,6 +71,20 @@ def binning(data, coluna, alfabeto, num_simbolos, ocorrencias):
 
     return nova_coluna
 
+def calculo_medio(data):
+
+    media = set()
+
+    for coluna in data.columns:
+        media.add(np.mean(data[coluna]))
+        print(f"Média para {coluna}: {round(np.mean(data[coluna]))}")
+
+    media_list = list(media)
+
+    #CALCULAR A MÉDIA TOTAL
+    media_total = np.mean(media_list)
+    print(f"Média total: {round(media_total, 2)}")
+
 
 
 def main():
@@ -103,7 +117,6 @@ def main():
     # Calcular e plotar as ocorrências
     ocorrencias_por_variavel = calcular_ocorrencias(data_uint16, alfabeto_geral)
 
-
     # Aplicar binning nas colunas e salvar as colunas binned no DataFrame
     data_uint16["Weight_binned"] = binning(data_uint16, "Weight", alfabeto_geral, 5, ocorrencias_por_variavel["Weight"])
     data_uint16["Displacement_binned"] = binning(data_uint16, "Displacement", alfabeto_geral, 5, ocorrencias_por_variavel["Displacement"])
@@ -113,6 +126,8 @@ def main():
     colunas_binned = ["Weight_binned", "Displacement_binned", "Horsepower_binned"]
     ocorrencias_binned = calcular_ocorrencias(data_uint16[colunas_binned], alfabeto_geral)
 
+    # Calcular a média
+    calculo_medio(data_uint16)
 
 
 if __name__ == "__main__":
