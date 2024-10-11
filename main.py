@@ -30,7 +30,7 @@ def calcular_ocorrencias(data, alfabeto):
 def contar_ocorrencias(data, alfabetoGerral):
     ocorrencias_por_variavel = {}
     for coluna in data.columns:
-        contagem = np.zeros(len(alfabetoGerral), dtype=int)
+        contagem = np.zeros(len(alfabetoGerral), dtype=np.uint16)
         valores_unicos, contagem_valores = np.unique(data[coluna], return_counts=True)
 
         # Adicione uma impressão para verificar os valores únicos
@@ -48,6 +48,7 @@ def contar_ocorrencias(data, alfabetoGerral):
     return ocorrencias_por_variavel
 
 def binning(data, coluna, alfabeto, num_simbolos, ocorrencias):
+    #dividir o alfabeto em intervalos de acordo com o número de símbolos
     intervalos = np.array_split(alfabeto, len(alfabeto)/num_simbolos)
     nova_coluna = data[coluna].copy()
     
@@ -73,17 +74,23 @@ def binning(data, coluna, alfabeto, num_simbolos, ocorrencias):
 
 def calculo_medio(data):
 
-    media = set()
-
+    # Calcula a entropia para cada coluna individualmente
     for coluna in data.columns:
-        media.add(np.mean(data[coluna]))
-        print(f"Média para {coluna}: {round(np.mean(data[coluna]))}")
+        # Normalizar para calcular as probabilidades (soma dos valores da coluna tem que ser 1)
+        valores_norm = data[coluna] / np.sum(data[coluna])
+        
+        # Cálculo da entropia para a coluna
+        entropia_coluna = -np.sum(valores_norm * np.log2(valores_norm))
+        
+        print(f"Média (entropia) para {coluna}: {round(entropia_coluna, 2)}")
 
-    media_list = list(media)
 
-    #CALCULAR A MÉDIA TOTAL
-    media_total = np.mean(media_list)
-    print(f"Média total: {round(media_total, 2)}")
+    # Calcula a média total considerando todas as colunas juntas
+    data_flat = data.values.flatten()
+    valores_totais_norm = data_flat / np.sum(data_flat)
+    media_total = -np.sum(valores_totais_norm * np.log2(valores_totais_norm))
+
+    print(f"Média total (entropia considerando todas as colunas juntas): {round(media_total, 2)}")
 
 
 
