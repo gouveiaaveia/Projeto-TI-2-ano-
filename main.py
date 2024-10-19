@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import huffmancodec as huffc
 
 def calcular_ocorrencias(data, alfabeto):
     # Obter o número de ocorrências para cada variável
