@@ -55,7 +55,7 @@ def binning(data, coluna, alfabeto, num_simbolos, ocorrencias):
     
     for idx, valor_original in enumerate(data[coluna]):
         for intervalo in intervalos:
-            if intervalo[0] <= valor_original <= intervalo[-1]:
+            if intervalo[0] <= valor_original <= intervalo[-1]: #verificar se o valor está dentro do intervalo
                 indices = np.isin(alfabeto, intervalo)
                 valores_frequentes = alfabeto[indices]
                 frequencias = ocorrencias[indices]
@@ -73,25 +73,53 @@ def binning(data, coluna, alfabeto, num_simbolos, ocorrencias):
 
     return nova_coluna
 
-def calculo_medio(data):
+def calculo_medio_bits(data):
 
     # Calcula a entropia para cada coluna individualmente
     for coluna in data.columns:
-        # Normalizar para calcular as probabilidades (soma dos valores da coluna tem que ser 1)
-        valores_norm = data[coluna] / np.sum(data[coluna])
+        # conta a frequência de cada valor na coluna e normaliza (divide pelo total de ocorrencias).values retona os vaslores como um array
+        valores_norm = data[coluna].value_counts(normalize=True).sort_index().values
         
         # Cálculo da entropia para a coluna
         entropia_coluna = -np.sum(valores_norm * np.log2(valores_norm))
         
-        print(f"Média (entropia) para {coluna}: {round(entropia_coluna, 2)}")
+        print(f"Média (entropia) para {coluna}: {round(entropia_coluna, 10)}")
 
 
     # Calcula a média total considerando todas as colunas juntas
     data_flat = data.values.flatten()
-    valores_totais_norm = data_flat / np.sum(data_flat)
-    media_total = -np.sum(valores_totais_norm * np.log2(valores_totais_norm))
 
-    print(f"Média total (entropia considerando todas as colunas juntas): {round(media_total, 2)}")
+    #Contar a frequência dos valores em todas as colunas
+    valores_unicos, contagem = np.unique(data_flat, return_counts=True)
+
+    #Obter as porbabilidades
+    probabilidade_total = contagem/ np.sum(contagem)
+
+    media_total = -np.sum(probabilidade_total * np.log2(probabilidade_total))
+
+    print(f"Média total (entropia considerando todas as colunas juntas): {round(media_total, 10)}")
+
+def huff(S):
+    codec = huffc.HuffmanCodec.from_data(S)
+    symbols, lengths = codec.get_code_len()
+
+    #print(f"Alfabeto: {symbols}")
+    #print(f"Comprimentos: {lengths}")
+
+    return symbols, lengths
+
+    # 8 b) o valores têm que estar entre a entropia e a entropia + 1
+    # 8 c) colocar os simbolos combinados na lista usando a ordem mais elevada possível
+
+# Função não utilizada
+def variancia_ponderada(valores, pesos):
+    # Calcular a média ponderada
+    media_ponderada = np.average(valores, weights=pesos)
+    
+    # Calcular a variância ponderada
+    variancia = np.average((valores - media_ponderada)**2, weights=pesos)
+    
+    return variancia
 
 def huffmaan(data): 
     for coluna in data.columns:
@@ -104,26 +132,24 @@ def huffmaan(data):
         
         # Calcular as frequências dos símbolos na coluna 
         frequencias = data[coluna].value_counts().reindex(symbols, fill_value=0).values
-
         # Normalizar as frequências para obter as probabilidades
         probabilidades = frequencias / np.sum(frequencias)
 
         # Calcular o valor médio de bits por símbolo
         L_media = np.sum(probabilidades * lengths)
-
         # Calcular a variância ponderada
         variancia_ponderada = np.sum(probabilidades * (lengths - L_media) ** 2)  #tem uma formula(ver)
+        print(f"Coluna: {coluna}, Valor médio de bits por símbolo: {L_media:.10f} bits")
+        print(f"Variância ponderada dos comprimentos: {variancia_ponderada:.10f}\n")
 
-        print(f"Coluna: {coluna}, Valor médio de bits por símbolo: {L_media:.2f} bits")
-        print(f"Simbolo: {symbols}, tamanho: {lengths}")
-        print(f"Variância ponderada dos comprimentos: {variancia_ponderada:.2f}\n")
 
 def main():
+
     # Carregar o arquivo Excel
     exelFile = "CarDataset.xlsx"
     data = pd.read_excel(exelFile)
 
-    varNames = data.columns.values.tolist() #[nome_coluna...]
+    varNames = data.columns.values.tolist()
 
     # Plotar gráficos MPG vs outras variáveis
     j = 0
@@ -149,14 +175,20 @@ def main():
     ocorrencias_por_variavel = calcular_ocorrencias(data_uint16, alfabeto_geral)
 
     # Aplicar binning nas colunas e salvar as colunas binned no DataFrame
-    data_uint16["Weight_binned"] = binning(data_uint16, "Weight", alfabeto_geral, 5, ocorrencias_por_variavel["Weight"])
-    data_uint16["Displacement_binned"] = binning(data_uint16, "Displacement", alfabeto_geral, 5, ocorrencias_por_variavel["Displacement"])
-    data_uint16["Horsepower_binned"] = binning(data_uint16, "Horsepower", alfabeto_geral, 5, ocorrencias_por_variavel["Horsepower"])
+    data_uint16["Weight"] = binning(data_uint16, "Weight", alfabeto_geral, 40, ocorrencias_por_variavel["Weight"])
+    data_uint16["Displacement"] = binning(data_uint16, "Displacement", alfabeto_geral, 5, ocorrencias_por_variavel["Displacement"])
+    data_uint16["Horsepower"] = binning(data_uint16, "Horsepower", alfabeto_geral, 5, ocorrencias_por_variavel["Horsepower"])
 
     # Calcular e plotar as ocorrências para os novos valores binned
-    colunas_binned = ["Weight_binned", "Displacement_binned", "Horsepower_binned"]
+    colunas_binned = ["Weight", "Displacement", "Horsepower"]
     ocorrencias_binned = calcular_ocorrencias(data_uint16[colunas_binned], alfabeto_geral)
 
     # Calcular a média
-    calculo_medio(data_uint16)
-    huffmaan(data)
+    print(calculo_medio_bits(data_uint16))
+
+
+    huffmaan(data_uint16)
+    
+
+if __name__ == "__main__":
+    main()
