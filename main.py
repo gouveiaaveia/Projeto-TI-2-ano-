@@ -99,15 +99,6 @@ def calculo_medio_bits(data):
 
     print(f"Média total (entropia considerando todas as colunas juntas): {round(media_total, 10)}")
 
-def huff(S):
-    codec = huffc.HuffmanCodec.from_data(S)
-    symbols, lengths = codec.get_code_len()
-
-    #print(f"Alfabeto: {symbols}")
-    #print(f"Comprimentos: {lengths}")
-
-    return symbols, lengths
-
     # 8 b) o valores têm que estar entre a entropia e a entropia + 1
     # 8 c) colocar os simbolos combinados na lista usando a ordem mais elevada possível
 
