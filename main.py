@@ -92,14 +92,37 @@ def calculo_medio(data):
 
     print(f"Média total (entropia considerando todas as colunas juntas): {round(media_total, 2)}")
 
+def huffmaan(data): 
+    for coluna in data.columns:
+        # Construir o codec de Huffman a partir dos dados da coluna
+        codec = huffc.HuffmanCodec.from_data(data[coluna])
+        
+        # Obter os símbolos e comprimentos dos códigos
+        symbols, lengths = codec.get_code_len() #symbols é cada numero do abcedario em cada coluna
+                                                #se um simbolo tem 00 em binario a length é 2 bits
+        
+        # Calcular as frequências dos símbolos na coluna 
+        frequencias = data[coluna].value_counts().reindex(symbols, fill_value=0).values
 
+        # Normalizar as frequências para obter as probabilidades
+        probabilidades = frequencias / np.sum(frequencias)
+
+        # Calcular o valor médio de bits por símbolo
+        L_media = np.sum(probabilidades * lengths)
+
+        # Calcular a variância ponderada
+        variancia_ponderada = np.sum(probabilidades * (lengths - L_media) ** 2)  #tem uma formula(ver)
+
+        print(f"Coluna: {coluna}, Valor médio de bits por símbolo: {L_media:.2f} bits")
+        print(f"Simbolo: {symbols}, tamanho: {lengths}")
+        print(f"Variância ponderada dos comprimentos: {variancia_ponderada:.2f}\n")
 
 def main():
     # Carregar o arquivo Excel
     exelFile = "CarDataset.xlsx"
     data = pd.read_excel(exelFile)
 
-    varNames = data.columns.values.tolist()
+    varNames = data.columns.values.tolist() #[nome_coluna...]
 
     # Plotar gráficos MPG vs outras variáveis
     j = 0
@@ -135,7 +158,4 @@ def main():
 
     # Calcular a média
     calculo_medio(data_uint16)
-
-
-if __name__ == "__main__":
-    main()
+    huffmaan(data)
