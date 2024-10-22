@@ -54,7 +54,7 @@ def binning(data, coluna, alfabeto, num_simbolos, ocorrencias):
     #criar cópia de coluna para depois colocar os novos valores
     nova_coluna = data[coluna].copy()
     
-    for idx, valor_original in enumerate(data[coluna]):
+    for idx, valor_original in enumerate(data[coluna]): #transforma os dados em dois arrays[indices] e os [valores]
         for intervalo in intervalos:
             if intervalo[0] <= valor_original <= intervalo[-1]: #verificar se o valor está dentro do intervalo
                 #valores que estão no intervalo
