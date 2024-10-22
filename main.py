@@ -51,26 +51,29 @@ def contar_ocorrencias(data, alfabetoGerral):
 def binning(data, coluna, alfabeto, num_simbolos, ocorrencias):
     #dividir o alfabeto em intervalos de acordo com o número de símbolos
     intervalos = np.array_split(alfabeto, len(alfabeto)/num_simbolos)
+    #criar cópia de coluna para depois colocar os novos valores
     nova_coluna = data[coluna].copy()
     
     for idx, valor_original in enumerate(data[coluna]):
         for intervalo in intervalos:
             if intervalo[0] <= valor_original <= intervalo[-1]: #verificar se o valor está dentro do intervalo
+                #valores que estão no intervalo
                 indices = np.isin(alfabeto, intervalo)
+                #extrai todos os valores
                 valores_frequentes = alfabeto[indices]
+                #estrai as frequências de cada valor
                 frequencias = ocorrencias[indices]
-
-                # Imprima para verificar as frequências
-                print(f"Frequências para intervalo {intervalo}: {frequencias}")
 
                 # Verifique se frequências está vazio
                 if np.any(frequencias):
+                    #atribui a esta variável o valor com maior frequência
                     valor_mais_frequente = valores_frequentes[np.argmax(frequencias)]
+                    #coloca na nova coluna o valor mais frequente
                     nova_coluna.iloc[idx] = valor_mais_frequente
                 else:
                     print(f"Aviso: Nenhuma frequência encontrada para o intervalo {intervalo}")
                 break
-
+         
     return nova_coluna
 
 def calculo_medio_bits(data):
@@ -102,16 +105,6 @@ def calculo_medio_bits(data):
     # 8 b) o valores têm que estar entre a entropia e a entropia + 1
     # 8 c) colocar os simbolos combinados na lista usando a ordem mais elevada possível
 
-# Função não utilizada
-def variancia_ponderada(valores, pesos):
-    # Calcular a média ponderada
-    media_ponderada = np.average(valores, weights=pesos)
-    
-    # Calcular a variância ponderada
-    variancia = np.average((valores - media_ponderada)**2, weights=pesos)
-    
-    return variancia
-
 def huffmaan(data): 
     for coluna in data.columns:
         # Construir o codec de Huffman a partir dos dados da coluna
@@ -122,18 +115,37 @@ def huffmaan(data):
                                                 #se um simbolo tem 00 em binario a length é 2 bits
         
         # Calcular as frequências dos símbolos na coluna 
-        frequencias = data[coluna].value_counts().reindex(symbols, fill_value=0).values #vai dar um array com as frequencias nos determinados indices abc[A,B,C] [1,3,0]
+        frequencias = data[coluna].value_counts().reindex(symbols, fill_value=0).values
         # Normalizar as frequências para obter as probabilidades
-        probabilidades = frequencias / np.sum(frequencias) #array probalidades[freq/soma das freq]
+        probabilidades = frequencias / np.sum(frequencias)
 
         # Calcular o valor médio de bits por símbolo
-        L_media = np.sum(probabilidades * lengths) #array com [probabilidades*legths por cada indice]
- 
+        L_media = np.average(lengths, weights=probabilidades)
         # Calcular a variância ponderada
-        variancia_ponderada = np.sum(probabilidades * (lengths - L_media) ** 2)  #array[com as variancias ponderadasd] tem uma formula(ver)
-        print(f"Coluna: {coluna}, Valor médio de bits por símbolo: {L_media:.10f} bits")
+        variancia_ponderada = np.average((lengths - L_media)**2, weights=probabilidades)  #tem uma formula(ver)
+        print(f"Média ponderada para {coluna}: {L_media:.10f} bits")
         print(f"Variância ponderada dos comprimentos: {variancia_ponderada:.10f}\n")
 
+    #Calcular a média total
+    data_flat = data.values.flatten()
+    codec = huffc.HuffmanCodec.from_data(data_flat)
+
+    symbols, lengths = codec.get_code_len()
+
+    valores_unicos, contagem = np.unique(data_flat, return_counts=True)
+    probabilidades = contagem / np.sum(contagem)
+
+    L_media = np.average(lengths, weights=probabilidades)
+    variancia_ponderada = np.average((lengths - L_media)**2, weights=probabilidades)
+
+    print(f"Média ponderada (total): {L_media:.10f} bits")
+    print(f"Variância ponderada dos comprimentos (total): {variancia_ponderada:.10f}\n")
+
+def correlacao_pearson(data, varNames):
+    for i in range(len(varNames) - 1):
+        corr = np.corrcoef(data[varNames[i]], data["MPG"])
+        print(f"Correlação de Pearson entre {data.columns[i]} e MPG: {corr[0, 1]}")
+        
 
 def main():
 
@@ -176,10 +188,13 @@ def main():
     ocorrencias_binned = calcular_ocorrencias(data_uint16[colunas_binned], alfabeto_geral)
 
     # Calcular a média
-    print(calculo_medio_bits(data_uint16))
-
-
+    calculo_medio_bits(data_uint16)
+    print("\n")
+    #Huffmaan
     huffmaan(data_uint16)
+
+    #Correlação de Pearson
+    correlacao_pearson(data_uint16, varNames)
     
 
 if __name__ == "__main__":
