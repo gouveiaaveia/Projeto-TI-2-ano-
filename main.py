@@ -51,18 +51,24 @@ def contar_ocorrencias(data, alfabetoGerral):
 def binning(data, coluna, alfabeto, num_simbolos, ocorrencias):
     #dividir o alfabeto em intervalos de acordo com o número de símbolos
     intervalos = np.array_split(alfabeto, len(alfabeto)/num_simbolos)
+    #criar cópia de coluna para depois colocar os novos valores
     nova_coluna = data[coluna].copy()
     
     for idx, valor_original in enumerate(data[coluna]):
         for intervalo in intervalos:
             if intervalo[0] <= valor_original <= intervalo[-1]: #verificar se o valor está dentro do intervalo
+                #valores que estão no intervalo
                 indices = np.isin(alfabeto, intervalo)
+                #extrai todos os valores
                 valores_frequentes = alfabeto[indices]
+                #estrai as frequências de cada valor
                 frequencias = ocorrencias[indices]
 
                 # Verifique se frequências está vazio
                 if np.any(frequencias):
+                    #atribui a esta variável o valor com maior frequência
                     valor_mais_frequente = valores_frequentes[np.argmax(frequencias)]
+                    #coloca na nova coluna o valor mais frequente
                     nova_coluna.iloc[idx] = valor_mais_frequente
                 else:
                     print(f"Aviso: Nenhuma frequência encontrada para o intervalo {intervalo}")
