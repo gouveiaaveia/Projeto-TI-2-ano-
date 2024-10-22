@@ -115,15 +115,25 @@ def huffmaan(data):
                                                 #se um simbolo tem 00 em binario a length é 2 bits
         
         # Calcular as frequências dos símbolos na coluna 
-        frequencias = data[coluna].value_counts().reindex(symbols, fill_value=0).values
+        frequencias = data[coluna].value_counts().reindex(symbols, fill_value=0).values #vai dar um array com as frequencias nos determinados indices abc[A,B,C] [1,3,0]
         # Normalizar as frequências para obter as probabilidades
-        probabilidades = frequencias / np.sum(frequencias)
+        probabilidades = frequencias / np.sum(frequencias) #array probalidades[freq/soma das freq]
 
         # Calcular o valor médio de bits por símbolo
+<<<<<<< HEAD
+        L_media = np.sum(probabilidades * lengths) #array com [probabilidades*legths por cada indice]
+ 
+=======
         L_media = np.average(lengths, weights=probabilidades)
+>>>>>>> fce5bd28a68a2aed67379dc6e95d3bbbb7eb7365
         # Calcular a variância ponderada
+<<<<<<< HEAD
+        variancia_ponderada = np.sum(probabilidades * (lengths - L_media) ** 2)  #array[] tem uma formula(ver)
+        print(f"Coluna: {coluna}, Valor médio de bits por símbolo: {L_media:.10f} bits")
+=======
         variancia_ponderada = np.average((lengths - L_media)**2, weights=probabilidades)  #tem uma formula(ver)
         print(f"Média ponderada para {coluna}: {L_media:.10f} bits")
+>>>>>>> fce5bd28a68a2aed67379dc6e95d3bbbb7eb7365
         print(f"Variância ponderada dos comprimentos: {variancia_ponderada:.10f}\n")
 
     #Calcular a média total
